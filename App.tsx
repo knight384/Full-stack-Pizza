@@ -22,7 +22,9 @@ import {
   Trash2,
   X,
   Flame,
-  User as UserIcon
+  User as UserIcon,
+  Globe,
+  Clock
 } from 'lucide-react';
 import { 
   CustomPizza, 
@@ -34,7 +36,8 @@ import {
   UserRole, 
   ViewState,
   MenuItem,
-  CartItem
+  CartItem,
+  MenuCategory
 } from './types';
 import { 
   getInventory, 
@@ -137,6 +140,164 @@ const Navbar: React.FC<{
     </div>
   </nav>
 );
+
+const InventoryManager: React.FC = () => {
+  const [items, setItems] = useState<InventoryItem[]>([]);
+
+  useEffect(() => {
+    setItems(getInventory());
+  }, []);
+
+  const handleRestock = (id: string, amount: number) => {
+    const newItems = items.map(item => 
+      item.id === id ? { ...item, quantity: item.quantity + amount } : item
+    );
+    setItems(newItems);
+    updateInventory(newItems);
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 py-8">
+      <h2 className="text-2xl font-bold mb-6 flex items-center"><ClipboardList className="mr-2" /> Inventory Management</h2>
+      <div className="bg-white shadow-lg rounded-xl overflow-hidden border border-gray-100">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Item</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Category</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Price ($)</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Stock Level</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Quick Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {items.map((item) => {
+                const isOut = item.quantity === 0;
+                const isLow = item.quantity < item.threshold;
+                let rowClass = "hover:bg-gray-50 transition";
+                if (isOut) rowClass = "bg-red-50 hover:bg-red-100";
+                else if (isLow) rowClass = "bg-orange-50 hover:bg-orange-100";
+
+                return (
+                  <tr key={item.id} className={rowClass}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{item.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.category}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.price.toFixed(2)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-bold text-gray-900">
+                        {item.quantity} units
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {isOut ? (
+                          <span className="px-2 py-1 text-xs font-bold rounded-full bg-red-200 text-red-800 flex items-center w-fit">
+                              <AlertTriangle className="w-3 h-3 mr-1" /> Out of Stock
+                          </span>
+                      ) : isLow ? (
+                          <span className="px-2 py-1 text-xs font-bold rounded-full bg-orange-200 text-orange-800 flex items-center w-fit">
+                              <AlertTriangle className="w-3 h-3 mr-1" /> Low Stock
+                          </span>
+                      ) : (
+                          <span className="px-2 py-1 text-xs font-bold rounded-full bg-green-100 text-green-800">In Stock</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                            <button 
+                                onClick={() => handleRestock(item.id, 10)}
+                                className="px-3 py-1 bg-white border border-gray-300 rounded shadow-sm text-xs hover:bg-gray-50 text-gray-700 font-bold flex items-center"
+                            >
+                                <Plus className="w-3 h-3 mr-1" /> 10
+                            </button>
+                            <button 
+                                onClick={() => handleRestock(item.id, 50)}
+                                className="px-3 py-1 bg-blue-50 border border-blue-200 rounded shadow-sm text-xs hover:bg-blue-100 text-blue-700 font-bold flex items-center"
+                            >
+                                <Plus className="w-3 h-3 mr-1" /> 50
+                            </button>
+                        </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const OrderManager: React.FC = () => {
+    const [orders, setOrders] = useState<Order[]>([]);
+  
+    useEffect(() => {
+      const fetch = () => setOrders(getOrders().reverse());
+      fetch();
+      const interval = setInterval(fetch, 3000);
+      return () => clearInterval(interval);
+    }, []);
+  
+    const handleStatusUpdate = (id: string, newStatus: OrderStatus) => {
+      updateOrderStatus(id, newStatus);
+      setOrders(getOrders().reverse());
+    };
+  
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <h2 className="text-2xl font-bold mb-6 flex items-center"><ChefHat className="mr-2" /> All Orders</h2>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {orders.map((order) => (
+            <div key={order.id} className="bg-white rounded-xl shadow-md border border-gray-100 p-6">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Order #{order.id.slice(-4)}</h3>
+                  <p className="text-sm text-gray-500">{order.customerName}</p>
+                  <p className="text-xs text-gray-400">{new Date(order.createdAt).toLocaleTimeString()}</p>
+                </div>
+                <span className={`px-2 py-1 rounded text-xs font-bold 
+                  ${order.status === OrderStatus.DELIVERED ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                  {order.status}
+                </span>
+              </div>
+              
+              <div className="space-y-2 mb-4 border-t border-b border-gray-100 py-3">
+                 <p className="text-sm font-medium text-gray-700">Items:</p>
+                 <ul className="text-sm text-gray-600 list-disc pl-5">
+                    {order.items.map((item, idx) => (
+                        <li key={idx}>
+                            {item.quantity}x {item.type === 'MENU' ? item.menuItem?.name : (item.customPizza?.name || "Custom")}
+                        </li>
+                    ))}
+                 </ul>
+                 <p className="text-right font-bold text-gray-900 mt-2">Total: ${order.totalAmount.toFixed(2)}</p>
+              </div>
+  
+              <div className="mt-4 space-y-2">
+                <p className="text-xs font-semibold text-gray-500 uppercase">Update Status</p>
+                <div className="flex flex-wrap gap-2">
+                  {Object.values(OrderStatus).map((status) => (
+                    <button
+                      key={status}
+                      disabled={order.status === status}
+                      onClick={() => handleStatusUpdate(order.id, status)}
+                      className={`px-2 py-1 text-xs rounded border 
+                        ${order.status === status 
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                          : 'border-orange-200 text-orange-600 hover:bg-orange-50'}`}
+                    >
+                      {status}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+          {orders.length === 0 && <p className="text-gray-500 col-span-3 text-center py-10">No active orders.</p>}
+        </div>
+      </div>
+    );
+};
 
 const CartDrawer: React.FC<{ 
     isOpen: boolean; 
@@ -252,21 +413,28 @@ const MenuGrid: React.FC<{
     onCustomize: () => void;
 }> = ({ onAddToCart, onCustomize }) => {
     const [searchTerm, setSearchTerm] = useState('');
-    const [filter, setFilter] = useState<'ALL' | 'VEG' | 'NON-VEG' | 'BESTSELLER'>('ALL');
+    const [filter, setFilter] = useState<MenuCategory | 'ALL'>('ALL');
 
-    const categories = [
-        { id: 'ALL', label: 'All Pizzas' },
-        { id: 'BESTSELLER', label: 'Bestsellers' },
-        { id: 'VEG', label: 'Veg Pizza' },
-        { id: 'NON-VEG', label: 'Non-Veg Pizza' },
+    const categories: { id: MenuCategory | 'ALL'; label: string }[] = [
+        { id: 'ALL', label: 'All' },
+        { id: 'ITALIAN', label: 'Classic Italian' },
+        { id: 'ITALIAN_REGIONAL', label: 'Regional Italian' },
+        { id: 'AMERICAN', label: 'American' },
+        { id: 'GOURMET', label: 'Gourmet' },
+        { id: 'MEAT', label: 'Meat Lovers' },
+        { id: 'VEGGIE', label: 'Vegetarian' },
+        { id: 'SEAFOOD', label: 'Seafood' },
+        { id: 'INTERNATIONAL', label: 'International' },
+        { id: 'FORMATS', label: 'Special Formats' },
+        { id: 'DESSERTS', label: 'Desserts' },
+        { id: 'FUSION', label: 'Fusion' },
+        { id: 'SEASONAL', label: 'Seasonal' },
+        { id: 'SIDES', label: 'Sides' },
     ];
 
     const filteredItems = MENU_ITEMS.filter(item => {
         const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesCategory = filter === 'ALL' || 
-            (filter === 'BESTSELLER' && item.category === 'BESTSELLER') ||
-            (filter === 'VEG' && (item.category === 'VEG' || item.isVeg)) ||
-            (filter === 'NON-VEG' && !item.isVeg);
+        const matchesCategory = filter === 'ALL' || item.category === filter;
         return matchesSearch && matchesCategory;
     });
 
@@ -288,12 +456,12 @@ const MenuGrid: React.FC<{
             </div>
 
             {/* Filters & Search */}
-            <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-                <div className="flex space-x-2 overflow-x-auto pb-2 w-full md:w-auto no-scrollbar">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
+                <div className="flex flex-wrap gap-2 w-full lg:w-auto">
                     {categories.map(cat => (
                         <button
                             key={cat.id}
-                            onClick={() => setFilter(cat.id as any)}
+                            onClick={() => setFilter(cat.id)}
                             className={`px-4 py-2 rounded-full whitespace-nowrap text-sm font-bold transition ${
                                 filter === cat.id 
                                 ? 'bg-gray-900 text-white shadow-md' 
@@ -304,7 +472,7 @@ const MenuGrid: React.FC<{
                         </button>
                     ))}
                 </div>
-                <div className="relative w-full md:w-64">
+                <div className="relative w-full lg:w-64">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                     <input 
                         type="text" 
@@ -322,14 +490,21 @@ const MenuGrid: React.FC<{
                     <div key={item.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition duration-300 flex flex-col group">
                         <div className="relative h-48 overflow-hidden">
                             <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
-                            {item.category === 'BESTSELLER' && (
+                            {item.category === 'ITALIAN' && (
                                 <span className="absolute top-2 left-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded shadow-sm flex items-center">
-                                    <Star className="w-3 h-3 mr-1 fill-current" /> Bestseller
+                                    <Star className="w-3 h-3 mr-1 fill-current" /> Classic
                                 </span>
                             )}
-                            <span className={`absolute top-2 right-2 px-2 py-1 rounded text-xs font-bold shadow-sm ${item.isVeg ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                {item.isVeg ? 'VEG' : 'NON-VEG'}
-                            </span>
+                            <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
+                                <span className={`px-2 py-1 rounded text-xs font-bold shadow-sm ${item.isVeg ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                    {item.isVeg ? 'VEG' : 'NON-VEG'}
+                                </span>
+                                {item.category === 'DESSERTS' && (
+                                     <span className="px-2 py-1 rounded text-xs font-bold shadow-sm bg-purple-100 text-purple-700">
+                                        Sweet
+                                    </span>
+                                )}
+                            </div>
                         </div>
                         <div className="p-4 flex-1 flex flex-col">
                             <div className="flex justify-between items-start mb-2">
@@ -362,9 +537,7 @@ const MenuGrid: React.FC<{
     );
 }
 
-// ... (Re-use PizzaBuilder with slight modification to add to cart instead of checkout directly) ...
 const PizzaBuilder: React.FC<{ user: User; onAddToCart: (pizza: CustomPizza, price: number) => void }> = ({ user, onAddToCart }) => {
-    // ... [Previous PizzaBuilder Logic mostly same, but handleSubmit changes] ...
     const [inventory] = useState<InventoryItem[]>(getInventory());
     const [step, setStep] = useState(1);
     const [selection, setSelection] = useState<CustomPizza>({ base: '', sauce: '', cheese: '', veggies: [] });
@@ -427,7 +600,6 @@ const PizzaBuilder: React.FC<{ user: User; onAddToCart: (pizza: CustomPizza, pri
       };
   
       if (step === 3) {
-         // Context aware toppings suggestion
          const suggestedVeggies = await suggestToppings(
              aiMood, 
              { base: selection.base, sauce: selection.sauce, cheese: selection.cheese },
@@ -435,7 +607,6 @@ const PizzaBuilder: React.FC<{ user: User; onAddToCart: (pizza: CustomPizza, pri
          );
          setSelection({ ...selection, veggies: suggestedVeggies });
       } else {
-         // Full auto-fill
          const config = await suggestPizzaConfig(aiMood, inventoryNames);
          setSelection({
           base: config.base || selection.base,
@@ -629,6 +800,34 @@ const PizzaBuilder: React.FC<{ user: User; onAddToCart: (pizza: CustomPizza, pri
                      <Pizza className="w-40 h-40" />
                   </div>
                 </div>
+
+                {/* History List */}
+                {suggestionsHistory.length > 1 && (
+                  <div className="mt-6 text-left">
+                    <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3 flex items-center">
+                      <History className="h-4 w-4 mr-1" /> Idea History
+                    </h4>
+                    <div className="space-y-2">
+                      {suggestionsHistory.map((item, idx) => (
+                        <div 
+                          key={idx}
+                          onClick={() => setCurrentSuggestionIndex(idx)}
+                          className={`p-3 rounded-lg border cursor-pointer flex justify-between items-center transition-all ${
+                            idx === currentSuggestionIndex 
+                              ? 'bg-orange-50 border-orange-500 ring-1 ring-orange-500' 
+                              : 'bg-white border-gray-200 hover:border-orange-300'
+                          }`}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className={`font-bold text-sm truncate ${idx === currentSuggestionIndex ? 'text-orange-700' : 'text-gray-700'}`}>{item.name}</p>
+                            <p className="text-xs text-gray-500 truncate">{item.description}</p>
+                          </div>
+                          {idx === currentSuggestionIndex && <div className="h-2 w-2 rounded-full bg-orange-500 ml-3 flex-shrink-0"></div>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
   
                 <div className="bg-white p-6 rounded-xl border border-gray-200 inline-block text-left min-w-[300px] shadow-sm">
                   <div className="space-y-2">
@@ -679,9 +878,6 @@ const PizzaBuilder: React.FC<{ user: User; onAddToCart: (pizza: CustomPizza, pri
       </div>
     );
 };
-
-// ... [Existing DeliveryMap and UserOrders Components remain similar] ...
-// I will just stub them quickly or reuse if I had space, but since I'm rewriting App, I need to include them.
 
 const DeliveryMap: React.FC<{ 
     destination: { lat: number; lng: number }; 
@@ -829,15 +1025,12 @@ const UserOrders: React.FC<{ userId: string }> = ({ userId }) => {
     );
 };
 
-// --- Main App Component ---
-
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [view, setView] = useState<ViewState>('LOGIN');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   
-  // Auth Form State
   const [authMode, setAuthMode] = useState<'LOGIN' | 'REGISTER'>('LOGIN');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -892,7 +1085,6 @@ const App: React.FC = () => {
 
   const addToCart = (item: MenuItem | CustomPizza, price: number) => {
       setCart(prev => {
-          // Check if item exists (only for menu items)
           if ('id' in item) {
              const existing = prev.find(i => i.type === 'MENU' && i.menuItem?.id === item.id);
              if (existing) {
@@ -906,7 +1098,6 @@ const App: React.FC = () => {
                  unitPrice: price
              }];
           } else {
-             // Custom pizza always adds new entry
              return [...prev, {
                  cartId: Date.now().toString(),
                  type: 'CUSTOM',
@@ -1077,20 +1268,12 @@ const App: React.FC = () => {
         <UserOrders userId={user.id} />
       )}
 
-      {/* Admin Views Placeholder - reusing existing components logic implied */}
       {view === 'ADMIN_INVENTORY' && user?.role === UserRole.ADMIN && (
-          <div className="max-w-7xl mx-auto px-4 py-8">
-              <h2 className="text-2xl font-bold mb-4">Inventory Management</h2>
-              {/* Simplified View for brevity, real app uses full InventoryManager */}
-              <div className="bg-white p-6 rounded-lg shadow"><p>Inventory controls here...</p></div>
-          </div>
+        <InventoryManager />
       )}
+
       {view === 'ADMIN_ORDERS' && user?.role === UserRole.ADMIN && (
-          <div className="max-w-7xl mx-auto px-4 py-8">
-              <h2 className="text-2xl font-bold mb-4">All Orders</h2>
-               {/* Simplified View */}
-               <div className="bg-white p-6 rounded-lg shadow"><p>Admin order management here...</p></div>
-          </div>
+        <OrderManager />
       )}
     </div>
   );

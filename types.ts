@@ -24,7 +24,7 @@ export interface InventoryItem {
   name: string;
   category: InventoryCategory;
   quantity: number;
-  threshold: number; // Low stock alert threshold
+  threshold: number;
   price: number;
 }
 
@@ -33,9 +33,24 @@ export interface CustomPizza {
   sauce: string;
   cheese: string;
   veggies: string[];
-  name?: string; // AI generated name
-  description?: string; // AI generated description
+  name?: string;
+  description?: string;
 }
+
+export type MenuCategory = 
+  | 'ITALIAN' 
+  | 'ITALIAN_REGIONAL' 
+  | 'AMERICAN' 
+  | 'GOURMET' 
+  | 'MEAT' 
+  | 'VEGGIE' 
+  | 'SEAFOOD' 
+  | 'INTERNATIONAL' 
+  | 'FORMATS' 
+  | 'DESSERTS' 
+  | 'FUSION' 
+  | 'SEASONAL'
+  | 'SIDES';
 
 export interface MenuItem {
   id: string;
@@ -43,7 +58,7 @@ export interface MenuItem {
   description: string;
   price: number;
   image: string;
-  category: 'BESTSELLER' | 'VEG' | 'NON-VEG' | 'SIDES' | 'DESSERTS';
+  category: MenuCategory;
   isVeg: boolean;
   rating: number;
   calories?: number;
@@ -69,7 +84,7 @@ export interface Order {
   id: string;
   userId: string;
   customerName: string;
-  items: CartItem[]; // Changed from CustomPizza[] to CartItem[]
+  items: CartItem[];
   totalAmount: number;
   status: OrderStatus;
   createdAt: number;
